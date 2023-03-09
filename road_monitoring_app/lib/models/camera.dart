@@ -3,13 +3,14 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:road_monitoring_app/models/camera_image.dart';
 
 class Camera {
+  //final String _id;
   final LatLng _position;
   final String _name;
   String _condition;
   NetworkImage _currentView;
-  //List<CameraImage> _history;
 
   Camera(
+    //this._id,
     this._position,
     this._name,
     this._condition,

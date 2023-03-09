@@ -38,6 +38,9 @@ dependencies:
   location: ^4.4.0
   # Transport communication
   socket_io_client: ^2.0.0
+  http: ^0.13.5
+  # Save
+  flutter_secure_storage: ^8.0.0
 
 
   # The following adds the Cupertino Icons font to your application.

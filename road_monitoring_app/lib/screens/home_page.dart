@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -7,10 +8,16 @@ import 'package:flutter/src/widgets/placeholder.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
+import 'package:road_monitoring_app/main.dart';
 import 'package:road_monitoring_app/models/camera.dart';
+import 'package:road_monitoring_app/models/camera_location.dart';
+import 'package:road_monitoring_app/services/place_service.dart';
+import 'package:road_monitoring_app/themes/constants.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  const HomePage({
+    super.key,
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -19,7 +26,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   Location location = Location();
   late LocationData currentPosition;
-  late Marker marker;
   late GoogleMapController mapController;
   late LatLng initialCameraPosition;
   bool isInitialized = false;
@@ -49,8 +55,12 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     getLocation();
-    location.onLocationChanged.listen((LocationData currentLocation) {
-      print("a");
+    location.onLocationChanged.listen((LocationData currentLocation) async {
+      print("aaaaa");
+
+      // List<CameraLocation> cameras = await restService.fetchCameras(
+      //     currentLocation.latitude!, currentLocation.longitude!);
+
       setState(() {
         currentPosition = currentLocation;
         initialCameraPosition =
@@ -128,23 +138,115 @@ class _HomePageState extends State<HomePage> {
           markerId: MarkerId(camera.getName()),
           position: camera.getPosition(),
           icon: BitmapDescriptor.fromBytes(markerIcon),
-          onTap: () => showModalBottomSheet(
-            context: context,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(25.0),
-              ),
-            ),
-            builder: (context) {
-              return SizedBox(
-                height: 500.0,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: const <Widget>[],
+          infoWindow: InfoWindow(
+            title: camera.getName(),
+            snippet: 'Tap to view',
+            onTap: () => showModalBottomSheet(
+              backgroundColor: bgColorDarkTheme,
+              isScrollControlled: true,
+              context: context,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(25.0.r),
                 ),
-              );
-            },
+              ),
+              builder: (context) {
+                return SizedBox(
+                  height: 470.0.h,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 25.0.w,
+                      vertical: 25.0.h,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              camera.getName(),
+                              style: TextStyle(
+                                fontSize: 30.0.sp,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () {},
+                              icon: Icon(
+                                Icons.star_rounded,
+                                size: 30.0.sp,
+                              ),
+                            )
+                          ],
+                        ),
+                        Center(
+                          child: Container(
+                            height: 180.0.h,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(15.0.r),
+                              image: DecorationImage(
+                                image: camera.getCurrentView(),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Column(
+                          children: [
+                            Row(
+                              children: [
+                                Image.asset(
+                                  'assets/icons/location.png',
+                                  height: 40.0.h,
+                                ),
+                                SizedBox(width: 10.0.w),
+                                Text(
+                                  'Kostinbrod, Bulgaria',
+                                  style: TextStyle(fontSize: 18.0.sp),
+                                )
+                              ],
+                            ),
+                            SizedBox(height: 12.0.h),
+                            Row(
+                              children: [
+                                Image.asset(
+                                  'assets/icons/condition.png',
+                                  height: 40.0.h,
+                                ),
+                                SizedBox(width: 12.0.w),
+                                Text(
+                                  'Rainy',
+                                  style: TextStyle(
+                                    fontSize: 18.0.sp,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                )
+                              ],
+                            ),
+                            SizedBox(height: 12.0.h),
+                            Row(
+                              children: [
+                                Image.asset(
+                                  'assets/icons/date.png',
+                                  height: 40.0.h,
+                                ),
+                                SizedBox(width: 12.0.w),
+                                Text(
+                                  '12:30, 09/03/2023',
+                                  style: TextStyle(fontSize: 18.0.sp),
+                                )
+                              ],
+                            ),
+                          ],
+                        )
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
         ),
       );
@@ -167,55 +269,49 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Maps Sample App'),
-        elevation: 2,
-        leading: IconButton(
-          icon: Icon(Icons.abc),
-          onPressed: () => showModalBottomSheet(
-            isScrollControlled: true,
-            context: context,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(25.0.r),
-              ),
-            ),
-            builder: (context) {
-              return SizedBox(
-                height: 650.0.h,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 20.0.w,
-                    vertical: 20.0.h,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        camera1.getName(),
-                        style: TextStyle(
-                          fontSize: 30.0.sp,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      Center(
-                        child: Container(
-                          height: 140.0.h,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(15.0.r),
-                            image: DecorationImage(
-                              image: camera1.getCurrentView(),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      )
-                    ],
-                  ),
-                ),
-              );
-            },
+        elevation: 0.0,
+        backgroundColor: const Color(0xFF0A0D14),
+        shape: const Border(
+          bottom: BorderSide(
+            color: Color(0xFF38444D),
+            width: 1.5,
           ),
         ),
+        title: Row(
+          children: [
+            Text(
+              'Road',
+              style: TextStyle(
+                fontSize: 24.0.sp,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Text(
+              'Haze',
+              style: TextStyle(
+                fontSize: 24.0.sp,
+                color: Colors.red,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            onPressed: () {},
+            icon: Icon(
+              Icons.search_rounded,
+              size: 24.0.sp,
+            ),
+          ),
+          IconButton(
+            onPressed: () {},
+            icon: Icon(
+              Icons.star_rounded,
+              size: 24.0.sp,
+            ),
+          )
+        ],
       ),
       body: isInitialized
           ? GoogleMap(
@@ -230,11 +326,11 @@ class _HomePageState extends State<HomePage> {
               circles: {
                 Circle(
                   strokeWidth: 2,
-                  strokeColor: Colors.blue,
-                  circleId: const CircleId(''),
+                  strokeColor: bgColorDarkTheme,
+                  circleId: const CircleId('nearbyArea'),
                   center: LatLng(
                       currentPosition.latitude!, currentPosition.longitude!),
-                  radius: 10000,
+                  radius: 10000.0,
                 )
               },
             )
@@ -244,3 +340,113 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+
+class CustomSearch extends SearchDelegate {
+  @override
+  List<Widget>? buildActions(BuildContext context) {
+    return [
+      IconButton(
+        icon: const Icon(Icons.clear),
+        onPressed: () {
+          query = '';
+        },
+      )
+    ];
+  }
+
+  @override
+  Widget? buildLeading(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.arrow_back),
+      onPressed: () {
+        close(context, null);
+      },
+    );
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    return Container();
+    // return FutureBuilder(
+    //   // We will put the api call here
+    //   future: null,
+    //   builder: (context, snapshot) => query == ''
+    //       ? Container(
+    //           padding: EdgeInsets.all(16.0),
+    //           child: Text('Enter your address'),
+    //         )
+    //       : snapshot.hasData
+    //           ? ListView.builder(
+    //               itemBuilder: (context, index) => ListTile(
+    //                 // we will display the data returned from our future here
+    //                 title: Text(snapshot.data[index]),
+    //                 onTap: () {
+    //                   close(context, snapshot.data[index]);
+    //                 },
+    //               ),
+    //               itemCount: snapshot.data.length,
+    //             )
+    //           : Container(child: Text('Loading...')),
+    // );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    // TODO: implement buildResults
+    throw UnimplementedError();
+  }
+}
+
+// class AddressSearchDelegate extends SearchDelegate {
+//   @override
+//   List<Widget> buildActions(BuildContext context) {
+//     return [
+//       IconButton(
+//         icon: Icon(Icons.clear),
+//         onPressed: () {
+//           query = '';
+//         },
+//       )
+//     ];
+//   }
+
+//   @override
+//   Widget buildLeading(BuildContext context) {
+//     return IconButton(
+//       icon: Icon(Icons.arrow_back),
+//       onPressed: () {
+//         close(context, null);
+//       },
+//     );
+//   }
+
+//   @override
+//   Widget buildResults(BuildContext context) {
+//     return null;
+//   }
+
+//   @override
+//   Widget buildSuggestions(BuildContext context) {
+//     return FutureBuilder(
+//       // We will put the api call here
+//       future: null,
+//       builder: (context, snapshot) => query == ''
+//           ? Container(
+//               padding: EdgeInsets.all(16.0),
+//               child: Text('Enter your address'),
+//             )
+//           : snapshot.hasData
+//               ? ListView.builder(
+//                   itemBuilder: (context, index) => ListTile(
+//                     // we will display the data returned from our future here
+//                     title: Text(snapshot.data[index]),
+//                     onTap: () {
+//                       close(context, snapshot.data[index]);
+//                     },
+//                   ),
+//                   itemCount: snapshot.data!.length,
+//                 )
+//               : Container(child: Text('Loading...')),
+//     );
+//   }
+// }

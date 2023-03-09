@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-
+import 'package:road_monitoring_app/api/rest_api.dart';
+import 'package:road_monitoring_app/services/rest_service.dart';
+import 'package:road_monitoring_app/themes/themes.dart';
 import 'routes/route_generator.dart';
 
-import 'package:socket_io_client/socket_io_client.dart' as IO;
+final RestService restService = RestService(RestApi());
 
 void main() {
   runApp(const MyApp());
@@ -19,7 +21,8 @@ class MyApp extends StatelessWidget {
       builder: (context, child) {
         return MaterialApp(
           title: 'Road Condition Monitoring',
-          theme: ThemeData(fontFamily: 'Nunito'),
+          darkTheme: Themes.darkTheme,
+          themeMode: ThemeMode.dark,
           initialRoute: '/',
           onGenerateRoute: RouteGenerator.generateRoute,
           debugShowCheckedModeBanner: false,

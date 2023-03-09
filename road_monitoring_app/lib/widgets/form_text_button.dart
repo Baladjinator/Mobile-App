@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/src/widgets/framework.dart';
-import 'package:flutter/src/widgets/placeholder.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:road_monitoring_app/themes/constants.dart';
 
 class FormTextButton extends StatelessWidget {
   final String text;
@@ -22,7 +21,7 @@ class FormTextButton extends StatelessWidget {
         onPressed: onPressed,
         style: TextButton.styleFrom(
           foregroundColor: Theme.of(context).splashColor,
-          backgroundColor: Colors.amber,
+          backgroundColor: contrastColorDarkTheme,
           padding: EdgeInsets.symmetric(vertical: 15.0.h),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15.0.r),
@@ -31,7 +30,7 @@ class FormTextButton extends StatelessWidget {
         child: Text(
           text,
           style: TextStyle(
-            color: Colors.black,
+            color: Colors.white,
             fontSize: 18.0.sp,
           ),
         ),

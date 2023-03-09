@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/src/widgets/framework.dart';
-import 'package:flutter/src/widgets/placeholder.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:road_monitoring_app/constants.dart';
-import 'package:road_monitoring_app/utils.dart';
+import 'package:road_monitoring_app/themes/constants.dart';
+import 'package:road_monitoring_app/main.dart';
+import 'package:road_monitoring_app/utils/utils.dart';
 import 'package:road_monitoring_app/widgets/email_form_field.dart';
 import 'package:road_monitoring_app/widgets/form_text_button.dart';
 import 'package:road_monitoring_app/widgets/password_form_field.dart';
@@ -21,9 +20,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
   TextEditingController emailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   TextEditingController confirmPasswordController = TextEditingController();
-
-  late String email;
-  late String password;
 
   bool isObsecurePassword = true;
   bool isObsecureConfirmPassword = true;
@@ -51,28 +47,32 @@ class _RegistrationPageState extends State<RegistrationPage> {
     });
 
     if (formKey.currentState!.validate()) {
-      try {
-        setState(() {
-          isloading = false;
-        });
+      String email = emailController.text;
+      String password = passwordController.text;
 
-        showSnackBar('Registration succeed');
-      } catch (e) {}
+      int responseCode = await restService.attemptSignUp(email, password);
+
+      if (responseCode == 201) {
+        setState(() {
+          userIsValid = true;
+        });
+      } else {
+        setState(() {
+          userIsValid = false;
+          showSnackBar('User with Email Already exists');
+        });
+      }
 
       setState(() {
         isloading = false;
       });
-
-      if (userIsValid) {
-        Navigator.pop(context);
-      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: bgColorLightTheme,
+      backgroundColor: bgColorDarkTheme,
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 15.0.w),
         child: Form(
@@ -83,15 +83,12 @@ class _RegistrationPageState extends State<RegistrationPage> {
               SizedBox(
                 height: 70.0.h,
               ),
-              Container(
-                //color: Colors.amber,
-                child: Text(
-                  'Register\nyour Account',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 34.0.sp,
-                  ),
+              Text(
+                'Register\nyour Account',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 34.0.sp,
                 ),
               ),
               SizedBox(height: 50.0.h),
@@ -124,11 +121,12 @@ class _RegistrationPageState extends State<RegistrationPage> {
                     ),
                     SizedBox(height: 16.0.h),
                     PasswordFormField(
-                      controller: passwordController,
+                      controller: confirmPasswordController,
                       text: 'Confirm Password',
                       isObsecure: isObsecurePassword,
                       validator: (value) {
-                        if (!isvalidPassword(value!)) {
+                        if (passwordController.text !=
+                            confirmPasswordController.text) {
                           return 'Passwords dont match';
                         } else {
                           return null;
@@ -141,7 +139,12 @@ class _RegistrationPageState extends State<RegistrationPage> {
               SizedBox(height: 40.0.h),
               FormTextButton(
                 text: 'Register',
-                onPressed: registration,
+                onPressed: () {
+                  registration();
+                  if (userIsValid) {
+                    Navigator.pop(context);
+                  }
+                },
               ),
             ],
           ),
