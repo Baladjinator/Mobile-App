@@ -28,9 +28,9 @@ class CameraLocation {
       json['name'],
       json['lat'],
       json['lon'],
-      json['condition'],
-      Image.memory(base64Decode(json['img'])),
-      json['datetime'],
+      json['image']['status'],
+      Image.memory(base64Decode(json['image']['img'])),
+      json['image']['date'],
     );
   }
 
@@ -51,7 +51,18 @@ class CameraLocation {
   }
 
   String getCondition() {
-    return _condition;
+    switch (_condition) {
+      case 'snow':
+        return 'It is snowy';
+      case 'rainy':
+        return 'It is rainy';
+      case 'water':
+        return 'It is rainy';
+      case 'dry':
+        return 'It is dry';
+      default:
+        return 'It is rainy';
+    }
   }
 
   Image getImg() {
@@ -60,5 +71,20 @@ class CameraLocation {
 
   String getDatetime() {
     return _datetime;
+  }
+
+  String getIconPath() {
+    switch (_condition) {
+      case 'snow':
+        return 'assets/icons/snow.png';
+      case 'rainy':
+        return 'assets/icons/rainy.png';
+      case 'water':
+        return 'assets/icons/rainy.png';
+      case 'dry':
+        return 'assets/icons/sunny.png';
+      default:
+        return 'assets/icons/dry.png';
+    }
   }
 }

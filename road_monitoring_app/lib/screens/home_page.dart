@@ -1,18 +1,17 @@
-import 'dart:convert';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/src/widgets/framework.dart';
-import 'package:flutter/src/widgets/placeholder.dart';
+import 'package:flutter_google_places_hoc081098/flutter_google_places_hoc081098.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_api_headers/google_api_headers.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_maps_webservice/places.dart' as wsp;
 import 'package:location/location.dart';
 import 'package:road_monitoring_app/main.dart';
-import 'package:road_monitoring_app/models/camera.dart';
 import 'package:road_monitoring_app/models/camera_location.dart';
-import 'package:road_monitoring_app/services/place_service.dart';
 import 'package:road_monitoring_app/themes/constants.dart';
+import 'package:road_monitoring_app/widgets/form_text_button.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({
@@ -29,56 +28,15 @@ class _HomePageState extends State<HomePage> {
   late GoogleMapController mapController;
   late LatLng initialCameraPosition;
   bool isInitialized = false;
+  final String apiKey = 'AIzaSyA_lJNz7OsdOvmP5XjXbXBqTwKIh9ASoJw';
+  String placeLocation = "Search Location";
+  Marker? lastMarker;
+  double radius = 400.0;
 
-  Set<Marker> markers = Set(); //markers for google map
+  PolylinePoints polylinePoints = PolylinePoints();
+  Map<PolylineId, Polyline> polylines = {};
 
-  Camera camera1 = Camera(
-      LatLng(42.806336, 23.2199877),
-      "Petrohan",
-      "snow",
-      NetworkImage(
-          'https://ichef.bbci.co.uk/news/976/cpsprodpb/C342/production/_88068994_thinkstockphotos-493881770.jpg'));
-  Camera camera2 = Camera(
-      LatLng(42.822262, 23.211637),
-      "camera2",
-      "sunny",
-      NetworkImage(
-          'https://ichef.bbci.co.uk/news/976/cpsprodpb/C342/production/_88068994_thinkstockphotos-493881770.jpg'));
-  Camera camera3 = Camera(
-      LatLng(42.811972, 23.229760),
-      "camera3",
-      "rainy",
-      NetworkImage(
-          'https://ichef.bbci.co.uk/news/976/cpsprodpb/C342/production/_88068994_thinkstockphotos-493881770.jpg'));
-
-  @override
-  void initState() {
-    super.initState();
-    getLocation();
-    location.onLocationChanged.listen((LocationData currentLocation) async {
-      print("aaaaa");
-
-      // List<CameraLocation> cameras = await restService.fetchCameras(
-      //     currentLocation.latitude!, currentLocation.longitude!);
-
-      setState(() {
-        currentPosition = currentLocation;
-        initialCameraPosition =
-            LatLng(currentPosition.latitude!, currentPosition.longitude!);
-      });
-    });
-
-    addMarker(camera1);
-    addMarker(camera2);
-    addMarker(camera3);
-  }
-
-  //  Future<List<Adress>> _getAddress(double lat, double lang) async {
-  //   final coordinates = new Coordinates(lat, lang);
-  //   List<Address> add =
-  //   await Geocoder.local.findAddressesFromCoordinates(coordinates);
-  //   return add;
-  // }
+  Set<Marker> markers = Set();
 
   getLocation() async {
     bool serviceEnabled;
@@ -103,14 +61,12 @@ class _HomePageState extends State<HomePage> {
     }
 
     currentPosition = await location.getLocation();
-    initialCameraPosition =
-        LatLng(currentPosition.latitude!, currentPosition.longitude!);
+    initialCameraPosition = LatLng(
+      currentPosition.latitude!,
+      currentPosition.longitude!,
+    );
 
     isInitialized = true;
-  }
-
-  void onMapCreated(GoogleMapController controller) {
-    mapController = controller;
   }
 
   Future<Uint8List> getBytesFromAsset(String path, int width) async {
@@ -128,130 +84,199 @@ class _HomePageState extends State<HomePage> {
         .asUint8List();
   }
 
-  void addMarker(Camera camera) async {
+  void addCamera(CameraLocation camera) async {
     final Uint8List markerIcon =
         await getBytesFromAsset(camera.getIconPath(), 125);
 
     setState(() {
       markers.add(
         Marker(
-          markerId: MarkerId(camera.getName()),
-          position: camera.getPosition(),
+          markerId: MarkerId(camera.getId()),
+          position: LatLng(camera.getLat(), camera.getLon()),
           icon: BitmapDescriptor.fromBytes(markerIcon),
           infoWindow: InfoWindow(
             title: camera.getName(),
             snippet: 'Tap to view',
-            onTap: () => showModalBottomSheet(
-              backgroundColor: bgColorDarkTheme,
-              isScrollControlled: true,
-              context: context,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(25.0.r),
-                ),
-              ),
-              builder: (context) {
-                return SizedBox(
-                  height: 470.0.h,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 25.0.w,
-                      vertical: 25.0.h,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              camera.getName(),
-                              style: TextStyle(
-                                fontSize: 30.0.sp,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () {},
-                              icon: Icon(
-                                Icons.star_rounded,
-                                size: 30.0.sp,
-                              ),
-                            )
-                          ],
-                        ),
-                        Center(
-                          child: Container(
-                            height: 180.0.h,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(15.0.r),
-                              image: DecorationImage(
-                                image: camera.getCurrentView(),
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
-                        ),
-                        Column(
-                          children: [
-                            Row(
-                              children: [
-                                Image.asset(
-                                  'assets/icons/location.png',
-                                  height: 40.0.h,
-                                ),
-                                SizedBox(width: 10.0.w),
-                                Text(
-                                  'Kostinbrod, Bulgaria',
-                                  style: TextStyle(fontSize: 18.0.sp),
-                                )
-                              ],
-                            ),
-                            SizedBox(height: 12.0.h),
-                            Row(
-                              children: [
-                                Image.asset(
-                                  'assets/icons/condition.png',
-                                  height: 40.0.h,
-                                ),
-                                SizedBox(width: 12.0.w),
-                                Text(
-                                  'Rainy',
-                                  style: TextStyle(
-                                    fontSize: 18.0.sp,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                )
-                              ],
-                            ),
-                            SizedBox(height: 12.0.h),
-                            Row(
-                              children: [
-                                Image.asset(
-                                  'assets/icons/date.png',
-                                  height: 40.0.h,
-                                ),
-                                SizedBox(width: 12.0.w),
-                                Text(
-                                  '12:30, 09/03/2023',
-                                  style: TextStyle(fontSize: 18.0.sp),
-                                )
-                              ],
-                            ),
-                          ],
-                        )
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+            onTap: () => getModalBottomSheet(camera),
           ),
         ),
       );
     });
   }
+
+  Future getModalBottomSheet(CameraLocation camera) {
+    return showModalBottomSheet(
+      context: context,
+      backgroundColor: bgColorDarkTheme,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(25.0.r),
+        ),
+      ),
+      builder: (context) {
+        return SizedBox(
+          height: 470.0.h,
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: 25.0.w,
+              vertical: 25.0.h,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      camera.getName(),
+                      style: TextStyle(
+                        fontSize: 30.0.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {},
+                      icon: Icon(
+                        Icons.star_rounded,
+                        size: 30.0.sp,
+                      ),
+                    )
+                  ],
+                ),
+                Center(
+                  child: Container(
+                    height: 180.0.h,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(15.0.r),
+                      image: DecorationImage(
+                        image: camera.getImg().image,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+                Column(
+                  children: [
+                    Row(
+                      children: [
+                        Image.asset(
+                          'assets/icons/location.png',
+                          height: 40.0.h,
+                        ),
+                        SizedBox(width: 10.0.w),
+                        Text(
+                          'Lat: ${camera.getLat()}; Lon: ${camera.getLon()}',
+                          style: TextStyle(fontSize: 18.0.sp),
+                        )
+                      ],
+                    ),
+                    SizedBox(height: 12.0.h),
+                    Row(
+                      children: [
+                        Image.asset(
+                          'assets/icons/condition.png',
+                          height: 40.0.h,
+                        ),
+                        SizedBox(width: 12.0.w),
+                        Text(
+                          camera.getCondition(),
+                          style: TextStyle(
+                            fontSize: 18.0.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      ],
+                    ),
+                    SizedBox(height: 12.0.h),
+                    Row(
+                      children: [
+                        Image.asset(
+                          'assets/icons/date.png',
+                          height: 40.0.h,
+                        ),
+                        SizedBox(width: 12.0.w),
+                        Text(
+                          camera.getDatetime(),
+                          style: TextStyle(fontSize: 18.0.sp),
+                        )
+                      ],
+                    ),
+                  ],
+                )
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    getLocation();
+
+    location.onLocationChanged.listen((LocationData currentLocation) async {
+      List<CameraLocation> cameras = await restService.fetchCameras(
+        currentLocation.latitude!,
+        currentLocation.longitude!,
+        radius,
+      );
+
+      setState(() {
+        currentPosition = currentLocation;
+        initialCameraPosition = LatLng(
+          currentPosition.latitude!,
+          currentPosition.longitude!,
+        );
+
+        for (CameraLocation camera in cameras) {
+          addCamera(camera);
+        }
+      });
+    });
+  }
+
+  void onMapCreated(GoogleMapController controller) {
+    mapController = controller;
+  }
+
+  addPolyLine(List<LatLng> polylineCoordinates) {
+    setState(() {
+      PolylineId id = PolylineId("poly");
+      Polyline polyline = Polyline(
+        polylineId: id,
+        color: Colors.red,
+        points: polylineCoordinates,
+        width: 6,
+      );
+      polylines[id] = polyline;
+    });
+  }
+
+  // void addCamera(Camera camera) async {
+  //   final Uint8List markerIcon =
+  //       await getBytesFromAsset(camera.getIconPath(), 125);
+
+  //   setState(() {
+  //     markers.add(
+  //       Marker(
+  //         markerId: MarkerId(camera.getName()),
+  //         position: camera.getPosition(),
+  //         icon: BitmapDescriptor.fromBytes(markerIcon),
+  //         infoWindow: InfoWindow(
+  //           title: camera.getName(),
+  //           snippet: 'Tap to view',
+  //           onTap: () =>
+  //           ),
+  //         ),
+  //       ),
+  //     );
+  //   });
+  // }
 
   // markers.add(
   //   Marker(
@@ -269,14 +294,6 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        elevation: 0.0,
-        backgroundColor: const Color(0xFF0A0D14),
-        shape: const Border(
-          bottom: BorderSide(
-            color: Color(0xFF38444D),
-            width: 1.5,
-          ),
-        ),
         title: Row(
           children: [
             Text(
@@ -298,7 +315,189 @@ class _HomePageState extends State<HomePage> {
         ),
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () async {
+              var place = await PlacesAutocomplete.show(
+                cursorColor: contrastColorDarkTheme,
+                logo: const SizedBox(),
+                context: context,
+                apiKey: apiKey,
+                mode: Mode.fullscreen,
+                strictbounds: false,
+                components: [wsp.Component(wsp.Component.country, 'bg')],
+              );
+
+              if (place != null) {
+                setState(() {
+                  placeLocation = place.description.toString();
+                });
+
+                final plist = wsp.GoogleMapsPlaces(
+                  apiKey: apiKey,
+                  apiHeaders: await GoogleApiHeaders().getHeaders(),
+                );
+
+                String placeid = place.placeId ?? "0";
+                final detail = await plist.getDetailsByPlaceId(placeid);
+                final geometry = detail.result.geometry!;
+                final lat = geometry.location.lat;
+                final lang = geometry.location.lng;
+                var newlatlang = LatLng(lat, lang);
+
+                mapController.animateCamera(
+                  CameraUpdate.newCameraPosition(
+                    CameraPosition(
+                      target: newlatlang,
+                      zoom: 15.0,
+                    ),
+                  ),
+                );
+
+                setState(() {
+                  if (lastMarker != null) {
+                    markers.remove(lastMarker);
+                  }
+
+                  lastMarker = Marker(
+                    markerId: MarkerId(placeid),
+                    position: newlatlang,
+                    infoWindow: InfoWindow(
+                      title: '${detail.result.name}',
+                      snippet: 'Tap to see more',
+                      onTap: () {},
+                    ),
+                    icon: BitmapDescriptor.defaultMarkerWithHue(
+                      BitmapDescriptor.hueAzure,
+                    ),
+                  );
+
+                  markers.add(lastMarker!);
+                });
+
+                List<LatLng> polylineCoordinates = [];
+
+                PolylineResult result =
+                    await polylinePoints.getRouteBetweenCoordinates(
+                  apiKey,
+                  PointLatLng(
+                    currentPosition.latitude!,
+                    currentPosition.longitude!,
+                  ),
+                  PointLatLng(
+                    newlatlang.latitude,
+                    newlatlang.longitude,
+                  ),
+                  travelMode: TravelMode.driving,
+                );
+
+                if (result.points.isNotEmpty) {
+                  result.points.forEach((PointLatLng point) {
+                    polylineCoordinates.add(
+                      LatLng(point.latitude, point.longitude),
+                    );
+                  });
+                } else {
+                  print(result.errorMessage);
+                }
+
+                print(polylineCoordinates.length);
+
+                addPolyLine(polylineCoordinates);
+
+                // ignore: use_build_context_synchronously
+                showModalBottomSheet(
+                  context: context,
+                  backgroundColor: bgColorDarkTheme,
+                  isScrollControlled: true,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(25.0.r),
+                    ),
+                  ),
+                  builder: (context) {
+                    return SizedBox(
+                      height: 340.0.h,
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 25.0.w,
+                          vertical: 25.0.h,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Start Point',
+                                  style: TextStyle(
+                                    fontSize: 20.0.sp,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                SizedBox(width: 10.0.w),
+                                Text(
+                                  'Current location',
+                                  style: TextStyle(fontSize: 18.0.sp),
+                                )
+                              ],
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'End Point',
+                                  style: TextStyle(
+                                    fontSize: 20.0.sp,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                SizedBox(width: 10.0.w),
+                                Text(
+                                  placeLocation,
+                                  style: TextStyle(fontSize: 18.0.sp),
+                                )
+                              ],
+                            ),
+                            SizedBox(height: 5.0.h),
+                            FormTextButton(
+                              text: 'Show cameras',
+                              onPressed: () {},
+                            ),
+                            Ink(
+                              width: double.infinity,
+                              height: 60.0.h,
+                              decoration: BoxDecoration(
+                                color: Colors.transparent,
+                                border: Border.all(
+                                  color: borderColorDarkTheme,
+                                  width: 1.5,
+                                ),
+                                borderRadius:
+                                    BorderRadius.all(Radius.circular(15.0.r)),
+                              ),
+                              child: InkWell(
+                                onTap: () => Navigator.pop(context),
+                                borderRadius:
+                                    BorderRadius.all(Radius.circular(15.0.r)),
+                                child: Center(
+                                  child: Text(
+                                    'Cancel',
+                                    style: TextStyle(
+                                      fontSize: 18.0.sp,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }
+            },
             icon: Icon(
               Icons.search_rounded,
               size: 24.0.sp,
@@ -323,14 +522,17 @@ class _HomePageState extends State<HomePage> {
               myLocationEnabled: true,
               myLocationButtonEnabled: true,
               markers: markers,
+              polylines: Set<Polyline>.of(polylines.values),
               circles: {
                 Circle(
                   strokeWidth: 2,
                   strokeColor: bgColorDarkTheme,
                   circleId: const CircleId('nearbyArea'),
                   center: LatLng(
-                      currentPosition.latitude!, currentPosition.longitude!),
-                  radius: 10000.0,
+                    currentPosition.latitude!,
+                    currentPosition.longitude!,
+                  ),
+                  radius: radius,
                 )
               },
             )
@@ -340,113 +542,3 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-
-class CustomSearch extends SearchDelegate {
-  @override
-  List<Widget>? buildActions(BuildContext context) {
-    return [
-      IconButton(
-        icon: const Icon(Icons.clear),
-        onPressed: () {
-          query = '';
-        },
-      )
-    ];
-  }
-
-  @override
-  Widget? buildLeading(BuildContext context) {
-    return IconButton(
-      icon: const Icon(Icons.arrow_back),
-      onPressed: () {
-        close(context, null);
-      },
-    );
-  }
-
-  @override
-  Widget buildSuggestions(BuildContext context) {
-    return Container();
-    // return FutureBuilder(
-    //   // We will put the api call here
-    //   future: null,
-    //   builder: (context, snapshot) => query == ''
-    //       ? Container(
-    //           padding: EdgeInsets.all(16.0),
-    //           child: Text('Enter your address'),
-    //         )
-    //       : snapshot.hasData
-    //           ? ListView.builder(
-    //               itemBuilder: (context, index) => ListTile(
-    //                 // we will display the data returned from our future here
-    //                 title: Text(snapshot.data[index]),
-    //                 onTap: () {
-    //                   close(context, snapshot.data[index]);
-    //                 },
-    //               ),
-    //               itemCount: snapshot.data.length,
-    //             )
-    //           : Container(child: Text('Loading...')),
-    // );
-  }
-
-  @override
-  Widget buildResults(BuildContext context) {
-    // TODO: implement buildResults
-    throw UnimplementedError();
-  }
-}
-
-// class AddressSearchDelegate extends SearchDelegate {
-//   @override
-//   List<Widget> buildActions(BuildContext context) {
-//     return [
-//       IconButton(
-//         icon: Icon(Icons.clear),
-//         onPressed: () {
-//           query = '';
-//         },
-//       )
-//     ];
-//   }
-
-//   @override
-//   Widget buildLeading(BuildContext context) {
-//     return IconButton(
-//       icon: Icon(Icons.arrow_back),
-//       onPressed: () {
-//         close(context, null);
-//       },
-//     );
-//   }
-
-//   @override
-//   Widget buildResults(BuildContext context) {
-//     return null;
-//   }
-
-//   @override
-//   Widget buildSuggestions(BuildContext context) {
-//     return FutureBuilder(
-//       // We will put the api call here
-//       future: null,
-//       builder: (context, snapshot) => query == ''
-//           ? Container(
-//               padding: EdgeInsets.all(16.0),
-//               child: Text('Enter your address'),
-//             )
-//           : snapshot.hasData
-//               ? ListView.builder(
-//                   itemBuilder: (context, index) => ListTile(
-//                     // we will display the data returned from our future here
-//                     title: Text(snapshot.data[index]),
-//                     onTap: () {
-//                       close(context, snapshot.data[index]);
-//                     },
-//                   ),
-//                   itemCount: snapshot.data!.length,
-//                 )
-//               : Container(child: Text('Loading...')),
-//     );
-//   }
-// }

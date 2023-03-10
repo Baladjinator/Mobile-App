@@ -66,6 +66,10 @@ class _RegistrationPageState extends State<RegistrationPage> {
       setState(() {
         isloading = false;
       });
+
+      if (userIsValid) {
+        Navigator.pop(context);
+      }
     }
   }
 
@@ -139,12 +143,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
               SizedBox(height: 40.0.h),
               FormTextButton(
                 text: 'Register',
-                onPressed: () {
-                  registration();
-                  if (userIsValid) {
-                    Navigator.pop(context);
-                  }
-                },
+                onPressed: registration,
               ),
             ],
           ),

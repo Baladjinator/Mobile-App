@@ -47,9 +47,11 @@ class _LoginPageState extends State<LoginPage> {
       String password = passwordController.text;
 
       int responseCode = await restService.attemptLogIn(email, password);
+      print(responseCode);
 
       if (responseCode == 202) {
         setState(() {
+          print("a");
           userIsValid = true;
         });
       } else {
@@ -62,6 +64,10 @@ class _LoginPageState extends State<LoginPage> {
       setState(() {
         isloading = false;
       });
+
+      if (userIsValid) {
+        Navigator.pushReplacementNamed(context, '/home_page');
+      }
     }
   }
 
@@ -130,12 +136,7 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   FormTextButton(
                     text: 'Log In',
-                    onPressed: () {
-                      login();
-                      if (userIsValid) {
-                        Navigator.pushReplacementNamed(context, '/home_page');
-                      }
-                    },
+                    onPressed: login,
                   ),
                   SizedBox(height: 15.0.h),
                   Row(
@@ -155,7 +156,9 @@ class _LoginPageState extends State<LoginPage> {
                         onTap: () {
                           Navigator.pushNamed(context, '/registration_page');
                           emailController.clear();
+                          emailController.text = '';
                           passwordController.clear();
+                          passwordController.text = '';
                           formKey.currentState!.reset();
                         },
                         child: Text(

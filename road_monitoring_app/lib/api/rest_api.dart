@@ -1,16 +1,15 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:road_monitoring_app/models/camera.dart';
 import 'package:road_monitoring_app/models/camera_location.dart';
 
 class RestApi {
-  final String SERVER_IP = 'http://10.0.224.186:9009/user';
+  final String SERVER_IP = 'http://192.168.1.103:9009';
 
   Future<int> attemptLogIn(String email, String password) async {
     final response = await http.post(
-      Uri.parse('$SERVER_IP/login'),
-      headers: <String, String>{
+      Uri.parse('$SERVER_IP/user/login'),
+      headers: {
         'Content-Type': 'application/json; charset=UTF-8',
       },
       body: jsonEncode({
@@ -24,8 +23,8 @@ class RestApi {
 
   Future<int> attemptSignUp(String email, String password) async {
     final response = await http.post(
-      Uri.parse('$SERVER_IP/signup'),
-      headers: <String, String>{
+      Uri.parse('$SERVER_IP/user/signup'),
+      headers: {
         'Content-Type': 'application/json; charset=UTF-8',
       },
       body: jsonEncode({
@@ -37,11 +36,22 @@ class RestApi {
     return response.statusCode;
   }
 
-  Future<List<CameraLocation>> fetchCameras(double lat, double lon) async {
-    final encodedData = Uri.encodeQueryComponent("{'lon': $lon, 'lat': $lat}");
-    final response =
-        await http.get(Uri.parse('$SERVER_IP/nearby?data=$encodedData'));
+  Future<List<CameraLocation>> fetchCameras(
+      double lat, double lon, double radius) async {
+    //final encodedData = Uri.encodeQueryComponent("{'lon': $lon, 'lat': $lat}");
+    final response = await http.post(
+      Uri.parse('$SERVER_IP/location/nearby'),
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode({
+        "lat": lat,
+        "lon": lon,
+        "radius": radius,
+      }),
+    );
 
+    //print(response.body);
     return parseResponse(response.body);
   }
 

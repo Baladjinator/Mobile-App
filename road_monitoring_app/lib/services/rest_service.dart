@@ -14,7 +14,8 @@ class RestService {
     return await _api.attemptSignUp(email, password);
   }
 
-  Future<List<CameraLocation>> fetchCameras(double lat, double lon) async {
-    return await _api.fetchCameras(lat, lon);
+  Future<List<CameraLocation>> fetchCameras(
+      double lat, double lon, double radius) async {
+    return await _api.fetchCameras(lat, lon, radius);
   }
 }
