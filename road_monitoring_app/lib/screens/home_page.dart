@@ -31,12 +31,13 @@ class _HomePageState extends State<HomePage> {
   final String apiKey = 'AIzaSyA_lJNz7OsdOvmP5XjXbXBqTwKIh9ASoJw';
   String placeLocation = "Search Location";
   Marker? lastMarker;
-  double radius = 400.0;
+  double radius = 77800.0;
 
   PolylinePoints polylinePoints = PolylinePoints();
   Map<PolylineId, Polyline> polylines = {};
 
   Set<Marker> markers = Set();
+  Set<Marker> toRemove = Set();
 
   getLocation() async {
     bool serviceEnabled;
@@ -232,6 +233,8 @@ class _HomePageState extends State<HomePage> {
           currentPosition.latitude!,
           currentPosition.longitude!,
         );
+
+        markers.clear();
 
         for (CameraLocation camera in cameras) {
           addCamera(camera);

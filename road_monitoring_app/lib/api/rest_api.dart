@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:road_monitoring_app/models/camera_location.dart';
 
 class RestApi {
-  final String SERVER_IP = 'http://192.168.1.103:9009';
+  final String SERVER_IP = 'https://roadhaze.mdatsev.dev';
 
   Future<int> attemptLogIn(String email, String password) async {
     final response = await http.post(
